@@ -1,6 +1,6 @@
 ---
 title: "Mini-project 1 - Reading and exploring datasets"
-author: "Mike K Smith /"
+author: "Mike K Smith"
 date: "02/08/2023"
 output: html_document
 ---
