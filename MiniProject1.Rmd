@@ -43,14 +43,14 @@ Read in the adsl data from the GitHub location (`https://github.com/phuse-org/ph
 
 ```{r read_adsl_data}
 
-adsl <- import(file =  "")
+adsl <- import(file =  "https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adsl.xpt")
 
 ```
 
 3.  To view the first 10 rows of the R object `adsl`, you can just simply type the dataset name. Type in `adsl` into the chunk below and run using the green arrow:
 
 ```{r view_adsl_object}
-
+adsl
 ```
 
 Note that the `adsl` data object has 254 rows and 48 columns.
@@ -73,9 +73,9 @@ Let's check whether the `AGE` variable is numeric and whether `RACE` is characte
 
 ```{r check_variable_types}
 
-is.numeric( )
+is.numeric("AGE")
 
-is.character( )
+is.character("RACE")
 
 ```
 
@@ -95,7 +95,7 @@ If some columns have missing values, you can use these warning messages to check
 
 ```{r create_adsl_eff}
 
-adsl_eff <- filter(.data = , EFFFL == 'Y')
+adsl_eff <- filter(.data = adsl, EFFFL == 'Y')
 
 adsl_eff
 
@@ -109,8 +109,8 @@ Again, recall that R is case-sensitive. Most variable names in SAS datasets are 
 
 ```{r arrange_adsl_eff}
 
-sort_adsl_eff <- arrange(.data = adsl_eff, )
-
+sort_adsl_eff <- arrange(.data = adsl_eff, USUBJID)
+sort_adsl_eff
 ```
 
 In the `tidyverse` package in R, there is a pipe operator `%>%` that allows us to combine a number of steps. The pipe passes the output object from the previous step as the value to be used for the first argument of the next function. So we combine the previous steps into the following data pipeline:
@@ -123,6 +123,7 @@ sort_adsl_eff <- adsl %>%
 
   arrange(USUBJID)
 
+sort_adsl_eff
 ```
 
 When we use the `%>%` operator, we read this as "...then...". So the above pipeline is read as "(Create an object called) **adsl_eff** which is **assigned by** (starting with the object) **adsl** *...then...* **filter** (where EFFFL is"Y") *...then...* **arrange** (by USUBJID)." The pipe operator allows us to combine steps where the intermediate objects aren't really worth keeping as named objects in R. Notice that when we use the pipe operator, we're no longer explicitly using the `.data =` argument of the following function. This is because the `%>%` passes the previous object through as the value of the first argument by default.
@@ -131,14 +132,15 @@ When we use the `%>%` operator, we read this as "...then...". So the above pipel
 
 ```{r skim_adsl_eff}
 
-skim( )
+skim(dat = adsl_eff)
 
 ```
 
 10. Sort the `adsl_eff` data by `TRT01A`, `USUBJID` variables and create a new dataset `adsl_eff_srt` You can use the previous code (HINT: `arrange( )`) to sort the data.
 
 ```{r sort_adsl_eff}
-
+adsl_eff_srt <- adsl_eff %>% arrange(TRT01A, USUBJID)
+adsl_eff_srt
 ```
 
 11. The `select` function will select out only the specified columns of a data object. Select only the following variables from the adsl_saf_srt data object: `USUBJID, AGE, AGEU, SEX, RACE, ETHNIC, TRT01A`. Copy and paste this list of variables into the `select` statement.
@@ -147,7 +149,7 @@ skim( )
 
 adsl_eff_srt <- adsl_eff_srt %>%
 
-  select( )
+  select(USUBJID, AGE, AGEU, SEX, RACE, ETHNIC, TRT01A)
 
 adsl_eff_srt
 
@@ -159,15 +161,15 @@ Now the `adsl_eff_srt` data object still has 234 rows, but only 7 columns.
 
 ```{r rename_adsl_eff_srt}
 
-names(x = adsl_eff_srt) <- c( )
-
+names(x = adsl_eff_srt) <- c("Subject ID","Age","AgeUnits","Sex","Race","Ethnicity","Treatment")
+adsl_eff_srt
 ```
 
 13. We can now generate a listing of the data. R has several packages that will allow us to display tables / print listings. In Rmarkdown documents like this one, simply printing the output will create a nice HTML representation of the data. Add in the data object name below to display it in the Rmarkdown document.
 
 ```{r display_adsl_eff_srt}
 
-print( )
+print(adsl_eff_srt)
 
 ```
 
@@ -183,6 +185,9 @@ htmlTable(x =  adsl_eff_srt,
 
           css.cell = "padding-left: .5em; padding-right: .2em;")
 
+
+htmlTable(x =  adsl_eff_srt, align = "c", rnames=FALSE, css.cell = "padding-left: .5em; padding-right: .2em;")
+htmlTable(x =  adsl_eff_srt, align = "r", rnames=FALSE, css.cell = "padding-left: .5em; padding-right: .2em;")
 ```
 
 14. Next, save this .rmd file to your desktop and then click on the "Knit" button at the top of the file to render an HTML version of this document.
