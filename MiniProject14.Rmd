@@ -38,7 +38,7 @@ then pressing Tab to advance to the next placeholder:
 
 ```{r function2}
 name <- function(variables) {
-    
+  
 }
 ```
 
