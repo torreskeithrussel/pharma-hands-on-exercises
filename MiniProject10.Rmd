@@ -279,7 +279,7 @@ adsl_counts(dataFile = adsl)
 
 ### Verdict 1: Not so helpful in this case as you do not know where the error is.
 
-```{r}
+```{r, eval=FALSE}
 debugonce(adsl_counts)
 adsl_counts(dataFile = adsl)
 ```
