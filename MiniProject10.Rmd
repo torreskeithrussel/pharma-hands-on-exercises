@@ -32,7 +32,7 @@ The easiest way to spring clean your R session is to clean out the Environment a
 
 ![R Global Environment with four objects: Data called "adsl", vectors "ALTmax" and "ALTmin" and a function called "uniqueVal"](img/MiniProject10_Environment.PNG)
 
-![R Global Environment with popup dialogue that appears when you click on the "broom" icon](img/MiniProject10_CleaningEnvironment.PNG)
+![R Global Environment with popup dialogue that appears when you click on the "broom" icon](img/MiniProject10_Cleaning Environment.PNG)
 
 This will clean out the Environment and start "fresh". REMEMBER TO SAVE ANYTHING YOU MIGHT NEED TO KEEP BEFORE YOU DO THIS!!
 
@@ -189,6 +189,7 @@ In the function below, I'm simulating having to wait for execution of upstream c
 ```{r, eval=FALSE}
 myFunction_add3_and_squareit <- function(x){
   y <- myFunction(x)
+  Sys.sleep(15)   # 2025-08-08/torrek22: Wait 15 seconds before entering debugger
   browser()
   y*y
 }
@@ -237,15 +238,79 @@ adsl_counts <- function(dataFile) {
   
  adsl_saf <- dataFile %>%
     filter(SAFFL == "Y")
+
+  Big_N_cnt <-  adsl_saf %>%
+    group_by( TRT01AN, TRT01A  ) %>%
+    summarise(N = n())
   
+  small_n_cnt <- adsl_saf %>%
+    group_by( TRT01AN, TRT01A,  SEX ) %>%
+    summarise(name = "n")
+  
+  adsl_mrg_cnt <- small_n_cnt %>%
+    left_join(Big_N_cnt, by = c("TRT01AN","TRT01A")) %>%
+    mutate(perc = round((n/N)*100, digits=1)) %>%
+    mutate(perc_char = format(perc, nsmall=1)) %>%
+    mutate(npct = paste(n, 
+                        paste0( "(", perc_char, ")" ) 
+                        ) 
+           ) %>%
+    mutate(SEX = recode(SEX, 
+                        "M" = "Male",
+                        "F" = "Female")) %>%
+    ungroup() %>%
+    select(TRT01A, SEX, npct) %>%
+    pivot_wider(names_from = TRT01A, values_from = npct) 
+  
+  return(adsl_mrg_cnt)
+}
+
+library(rio)
+library(tidyverse)
+
+inFile <- "https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adsl.xpt"
+
+adsl <- import(inFile)
+
+adsl_counts(dataFile = adsl)
+```
+
+### Solution 1: Use debugonce()
+
+### Verdict 1: Not so helpful in this case as you do not know where the error is.
+
+```{r}
+debugonce(adsl_counts)
+adsl_counts(dataFile = adsl)
+```
+
+### Solution 2: Use print()
+
+### Verdict 2: Helped to see that unlike datasets `adsl_saf` and `Big_N_cnt` that work fine, `small_n_cnt` did not capture summary counts per treatment per sex; thus error is there.
+
+```{r, eval=FALSE}
+adsl_counts <- function(dataFile) {
+  
+ adsl_saf <- dataFile %>%
+    filter(SAFFL == "Y")
+
+print("adsl_saf")  
+print(adsl_saf)  
+
   Big_N_cnt <-  adsl_saf %>%
     group_by( TRT01AN, TRT01A  ) %>%
     summarise(N = n())
 
+print("Big_N_cnt")  
+print(Big_N_cnt)  
+  
   small_n_cnt <- adsl_saf %>%
     group_by( TRT01AN, TRT01A,  SEX ) %>%
     summarise(name = "n")
 
+print("small_n_cnt")  
+print(small_n_cnt)  
+  
   adsl_mrg_cnt <- small_n_cnt %>%
     left_join(Big_N_cnt, by = c("TRT01AN","TRT01A")) %>%
     mutate(perc = round((n/N)*100, digits=1)) %>%
@@ -277,3 +342,50 @@ adsl_counts(dataFile = adsl)
 ## Extra Credit
 
 What would you need to do to fix the code above?
+
+```{r, eval=FALSE}
+adsl_counts <- function(dataFile) {
+  
+ adsl_saf <- dataFile %>%
+    filter(SAFFL == "Y")
+
+
+  Big_N_cnt <-  adsl_saf %>%
+    group_by( TRT01AN, TRT01A  ) %>%
+    summarise(N = n())
+
+  small_n_cnt <- adsl_saf %>%
+    group_by( TRT01AN, TRT01A,  SEX ) %>%
+    # summarise(name = "n")   # 2025-08-08/torrek22: Error is here. Corrected below.
+    summarise(n = n())
+
+print("small_n_cnt now correctly displayed")  
+print(small_n_cnt)  
+  
+  adsl_mrg_cnt <- small_n_cnt %>%
+    left_join(Big_N_cnt, by = c("TRT01AN","TRT01A")) %>%
+    mutate(perc = round((n/N)*100, digits=1)) %>%
+    mutate(perc_char = format(perc, nsmall=1)) %>%
+    mutate(npct = paste(n, 
+                        paste0( "(", perc_char, ")" ) 
+                        ) 
+           ) %>%
+    mutate(SEX = recode(SEX, 
+                        "M" = "Male",
+                        "F" = "Female")) %>%
+    ungroup() %>%
+    select(TRT01A, SEX, npct) %>%
+    pivot_wider(names_from = TRT01A, values_from = npct) 
+  
+  return(adsl_mrg_cnt)
+}
+
+library(rio)
+library(tidyverse)
+
+inFile <- "https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adsl.xpt"
+
+adsl <- import(inFile)
+
+adsl_counts(dataFile = adsl)
+```
