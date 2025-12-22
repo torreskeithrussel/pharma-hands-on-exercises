@@ -8,8 +8,8 @@ output: html_document
 # Putting it all together
 
 ## Data Source
-For these projects we are using anonymized CDISC datasets, which can be found here:
-https://github.com/phuse-org/phuse-scripts/tree/master/data/adam/cdisc 
+
+For these projects we are using anonymized CDISC datasets, which can be found here: <https://github.com/phuse-org/phuse-scripts/tree/master/data/adam/cdisc>
 
 ## How to use this document:
 
@@ -17,8 +17,7 @@ In this document you'll see code chunks (typically on a light grey background) a
 
 In this project we will be taking our code from Projects 2 and 3 and combining them to create output similar to that of our demog reference table
 
-In this project we are working towards creating a demography summary table similar to this one: 
-![Demographic table](img/MiniProject4_demog_table.png). After completing the challenge, the updated table should be similar to this one:![Final demographic table](img/demog_summary_table.png)
+In this project we are working towards creating a demography summary table similar to this one: ![Demographic table](img/MiniProject4_demog_table.png). After completing the challenge, the updated table should be similar to this one:![Final demographic table](img/demog_summary_table.png)
 
 For steps 1-7 we will be re-doing the code we did in Projects 2 and 3. We will not be breaking it up and explaining the code for these steps since this is taken directly from Projects 2 and 3. You can refer to those trainings for a full explanation of the code and logic used here.
 
@@ -147,8 +146,7 @@ age_cat %>%
 
 **ASIDE**: Use of factors to control data ordering
 
-In `myData` below, if we sort by `age` then R puts the age category "\>=65" first. This is because R sorts character variables alphanumerically, so "\>" comes before "1".
-(This may or may not occur depending on your version of R. Newer versions will actually sort it correctly!)
+In `myData` below, if we sort by `age` then R puts the age category "\>=65" first. This is because R sorts character variables alphanumerically, so "\>" comes before "1". (This may or may not occur depending on your version of R. Newer versions will actually sort it correctly!)
 
 ```{r}
 myData <- tibble::tribble(
@@ -209,23 +207,93 @@ agestat_cat
 
 This will resemble the final demog table when output.
 
-    age_cat - contains counts and percent for age groups x gender x treatment
+```         
+age_cat - contains counts and percent for age groups x gender x treatment
 
-    agestat_cat - contains summary statistics for gender x treatment
+agestat_cat - contains summary statistics for gender x treatment
+```
 
 ```{r allcomb}
 dm_allcomb <- bind_rows(age_cat, agestat_cat)  
 dm_allcomb
 ```
 
-    Note: When row binding, columns must match in variable name. We don't have any missing values, but it we did, those columns would be filled with 'NA' values. 
+```         
+Note: When row binding, columns must match in variable name. We don't have any missing values, but it we did, those columns would be filled with 'NA' values. 
+```
 
 ## Challenges: Take the following actions to match with the Demographic table.
 
-1.  Reorder the age variables to be in the correct order (<65, 65-80, >80)
+1.  Reorder the age variables to be in the correct order (\<65, 65-80, \>80)
 
 2.  Move N before Age- categories.
 
 3.  Add Ethnicity and Race.
 
 Save the .RMD file on your desktop and click on the "Knit" button at the top of the file to render an HTML version of this document.
+
+```{r Challenge Items 1 & 2}
+dm_allcomb2 <- bind_rows(dm_allcomb[4,],dm_allcomb[2,],dm_allcomb[1,],dm_allcomb[3,], dm_allcomb[5:8,])
+dm_allcomb2
+```
+
+```{r Challenge Item 3}
+varcat <- function(.dat=NULL,var=NULL) {
+  
+  var_N_cnt <- adsl_eff %>%
+    group_by(TRT01AN, TRT01A, {{var}}) %>%
+    count(name = "var_total")
+  
+  var_n_cnt <- adsl_eff %>%
+    group_by(TRT01AN, TRT01A, SEX, {{var}}) %>%
+    count(name = "var_n")
+  
+  var2 <- deparse(substitute(var))
+  
+  var_mrg_cnt <- var_n_cnt %>% 
+    left_join(var_N_cnt, 
+              by = c("TRT01AN", "TRT01A", var2))
+  
+  var_mrg_cnt2 <- var_mrg_cnt %>% 
+    left_join(Big_N_cnt, 
+              by = c("TRT01AN", "TRT01A"))
+  
+  var_mrg_cnt3 <- var_mrg_cnt2 %>% 
+    left_join(small_n_cnt, 
+              by = c("TRT01A", "TRT01AN", "SEX"))
+  
+  var_mrg_cnt3 <- ungroup(var_mrg_cnt3)
+  
+  var_data_new <- var_mrg_cnt3 %>% 
+    mutate(perc_tot = round((var_total/N)*100, 1)) %>%                 
+    mutate(perc_var = round((var_n/n)*100,1))
+  
+  var_pct <- var_data_new %>%
+    mutate(perc_tchar = format(perc_tot, nsmall = 1)) %>%
+    mutate(perc_achar = format(perc_var, nsmall = 1))
+  
+  var_n_pct <- var_pct %>%
+    mutate(npct = paste(var_n, paste0("(", perc_achar, ")"))) %>% 
+    select({{var}}, TRT01A, SEX, npct)
+  
+  var_trans <- pivot_wider(var_n_pct, 
+                           names_from = c(TRT01A,SEX), 
+                           values_from = npct, 
+                           values_fill = "0",
+                           names_sep = "_")
+  
+  var_cat <- rename(var_trans, category={{var}})
+  var_cat %>%
+    arrange(category)
+  
+  return(var_cat)
+
+}
+
+adsl_ethnic <- varcat(adsl_eff, ETHNIC)
+adsl_race <- varcat(adsl_eff,RACE)
+
+adsl_categories <- bind_rows(dm_allcomb2, adsl_ethnic, adsl_race)
+
+adsl_categories
+```
