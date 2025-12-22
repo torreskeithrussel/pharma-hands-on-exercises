@@ -2,14 +2,14 @@
 title: "Mini-project 2 - Summarising continuous and categorical data"
 author: "Mike K Smith"
 date: "02/13/2023"
-output: html_document 
+output: html_document
 ---
 
 # Build familiarity with R coding & generate Counts and Percentages of categorical variables by Gender
 
 In this project we are working towards creating a demography summary table like this one: ![Demographic table](img/MiniProject2_demog_table.png).a
 
-Ours won't look exactly like this, but we will be trying to mimic the structure of this table. 
+Ours won't look exactly like this, but we will be trying to mimic the structure of this table.
 
 ## Aims:
 
@@ -26,8 +26,8 @@ Ours won't look exactly like this, but we will be trying to mimic the structure 
 In this document you'll see code chunks (typically on a light grey background) and text. This is an example of an "Rmarkdown" document. You can write and run code within the document and the results will be presented underneath each code chunk. You should follow the instructions as written in the text, amending the code chunks, then running them to produce the outputs as instructed.
 
 ## Data Source
-For these projects we are using anonymized CDISC datasets, which can be found here:
-https://github.com/phuse-org/phuse-scripts/tree/master/data/adam/cdisc 
+
+For these projects we are using anonymized CDISC datasets, which can be found here: <https://github.com/phuse-org/phuse-scripts/tree/master/data/adam/cdisc>
 
 ## R objects and functions
 
@@ -45,8 +45,8 @@ library(rio)
 2.  Read in the CDISC adsl data from the GitHub location (`https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adsl.xpt`) and assign this to an object in R using the assignment operator `<-`. Make sure that the URL location is a character string by enclosing it in `" "`. The `rio` package has a function called `import` that reads data into R and infers the data type from the file name. The first argument of that function is `file`. Paste the file path / URL above after the `file=` argument in the code below, then run the chunk using the green arrow.
 
 ```{r read_adsl_data}
-adsl <- import( file = ""  )
-adsl
+adsl <- import( file = "https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adsl.xpt"  )
+# adsl
 ```
 
 Note that the `adsl` data object has 254 rows and 48 columns.
@@ -69,9 +69,9 @@ If you are unsure, try each option by pasting in the filter statement after the 
 ------------------------------------------------------------------------
 
 ```{r create_adsl_saf}
-adsl_eff <-   adsl %>%
-  filter(  )
-adsl_eff
+adsl_eff <-   # adsl %>%
+  filter( .data = adsl, EFFFL == "Y" )
+# adsl_eff
 ```
 
 After filtering out the data we now have 234 rows and 48 columns.
@@ -92,7 +92,7 @@ In the next code chunk we want to calculate the number of observations within ea
 
 ```{r group_by}
 adsl_eff %>%
-  group_by( ) %>%
+  group_by(TRT01A) %>%
   count(name = "N")
 ```
 
@@ -102,7 +102,7 @@ Whenever you use `group_by()` R will carry along the grouping variables into the
 
 ```{r big_N}
 Big_N_cnt <- adsl_eff %>%
-  group_by(   ) %>%
+  group_by(TRT01AN, TRT01A) %>%
   count(name = "N")
 Big_N_cnt
 ```
@@ -113,7 +113,7 @@ Big_N_cnt
 
 ```{r small_n}
 small_n_cnt <- adsl_eff %>%
-  group_by( TRT01AN, TRT01A,  ) %>%
+  group_by( TRT01AN, TRT01A, SEX ) %>%
   count(name = "n")
 small_n_cnt
 ```
@@ -122,13 +122,13 @@ Do we get different answers if we use the `group_by()` variables in a different 
 
 ```{r change_group_order}
 adsl_eff %>%
-  group_by(  ) %>%
+  group_by( SEX, TRT01AN, TRT01A  ) %>%
   count(name = "n")
 ```
 
 No. But the order of variables in columns in the output is changed.
 
-5.  Merging "Big_N\_cnt" and "small_n\_cnt" before calculating percentages...
+5.  Merging "Big_N_cnt" and "small_n_cnt" before calculating percentages...
 
 The {dplyr} package gives R users "SQL-like" functionality to join or filter two datasets / tables using a variety of methods: `left_join`, `right_join`, `inner_join`, `full_join`, `anti_join`, `semi_join`. (See <https://dplyr.tidyverse.org/articles/two-table.html> for more details). If you know `PROC SQL` then this will be quite familiar.
 
@@ -173,7 +173,7 @@ Notice that in the data above, the first two percentages have many decimal place
 To investigate this, let's look at a few example values
 
 ```{r rounding}
-x <- c(1.1, 1.499, 1.5,1.9, 2.5)
+x <- c(1.1, 1.499, 1.5, 1.9, 2.5)
 round(x)
 ```
 
@@ -302,8 +302,14 @@ In steps 6, 7, 8 and 9 we have looked at R chunks that merge the data, calculate
 
 ```{r pipeline}
 # Paste commands above after the "<-" assignment, one per line
-adsl_mrg_cnt <- 
-  
+adsl_mrg_cnt <- small_n_cnt %>%
+  left_join(Big_N_cnt) %>%
+  mutate(perc = round(n/N*100, digits=1)) %>%
+  mutate(perc_char = format(perc, nsmall=1)) %>%
+  mutate(npct = paste(n, "(", perc_char, ")" ) ) %>%
+  mutate(SEX = recode(SEX, "M" = "Male", "F" = "Female")) %>%
+  ungroup() %>%
+  select(TRT01A, SEX, npct)
 
 # Display this data so we can check it
 adsl_mrg_cnt
@@ -322,19 +328,68 @@ adsl_mrg_cnt %>%
 
 ## Challenge 1: You need to complete this challenge to be able to create the final demog table.
 
-Repeat the steps above, but add an additional grouping variable to the calculation of Big_N\_cnt and small_n\_cnt - `AGEGRP`. Here's the first step:
+Repeat the steps above, but add an additional grouping variable to the calculation of Big_N_cnt and small_n_cnt - `AGEGRP`. Here's the first step:
 
-```{r}
-adsl_saf %>%
+```{r Challenge 1}
+Big_N_cnt <- adsl_eff %>%
   group_by(TRT01AN, TRT01A, AGEGR1N, AGEGR1) %>%
   count(name = "N")
+Big_N_cnt
+
+small_n_cnt <- adsl_eff %>%
+  group_by(TRT01AN, TRT01A, AGEGR1N, AGEGR1, SEX) %>%
+  count(name = "n")
+small_n_cnt
+
+adsl_mrg_cnt <- small_n_cnt %>%
+  left_join(Big_N_cnt, by = c("TRT01A", "TRT01AN", "AGEGR1N", "AGEGR1")) %>%
+  mutate(perc = round(n/N*100, digits=1)) %>%
+  mutate(perc_char = format(perc, nsmall=1)) %>%
+  mutate(npct = paste(n, "(", perc_char, ")" ) ) %>%
+  mutate(SEX = recode(SEX, "M" = "Male", "F" = "Female")) %>%
+  ungroup() %>%
+  select(TRT01A, AGEGR1, SEX, npct)
+adsl_mrg_cnt
+
+adsl_mrg_cnt %>%
+  pivot_wider(names_from = TRT01A, values_from = npct)
 ```
 
 To check that your code is reproducible, you will want to use the "knit" button on the RStudio IDE interface to create an HTML file based on your saved .Rmd file. If your code chunks are reproducible then you should get an HTML file as a result. If NOT (if there's an error or if the "knit" process fails) then click on the arrow to the right of the "Run" button and select "Restart R and Run All Chunks". Then troubleshoot which chunk is causing problems.
 
 ## Challenge 2:
 
-Generate Counts and Percentages of Body Text Term (AEBODSYS) for Safety Population (SAFFL) based on the this CDISC dataset: `adae.xpt`
-
+Generate Counts and Percentages of Body Text Term (AEBODSYS) for Safety Population (SAFFL) based on the this CDISC dataset: `adae.xpt` .
 
 Save the .RMD file on your desktop and click on the "Knit" button at the top of the file to render an HTML version of this document.
+
+```{r Challenge 2}
+adae <- import( file = "https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adae.xpt"  )
+# adae
+
+adae_saf <-   # adsl %>%
+  filter( .data = adae, SAFFL == "Y" )
+# adae_saf
+
+adae_saf_bign <- adae_saf %>%
+  group_by(TRTA, TRTAN) %>% 
+  count(name = "N")
+adae_saf_bign
+
+adae_saf_bodsys <- adae_saf %>%
+  group_by(TRTA, TRTAN, AEBODSYS) %>% 
+  count(name = "n")
+adae_saf_bodsys
+
+adae_mrg_cnt <- adae_saf_bodsys %>%
+  left_join(adae_saf_bign, by = c("TRTA", "TRTAN")) %>%
+  mutate(perc = round(n/N*100, digits=1)) %>%
+  mutate(perc_char = format(perc, nsmall=1)) %>%
+  mutate(npct = paste(n, "(", perc_char, ")" ) ) %>%
+  ungroup() %>%
+  select(TRTA, AEBODSYS, npct)
+adae_mrg_cnt
+
+adae_mrg_cnt %>%
+  pivot_wider(names_from = TRTA, values_from = npct, values_fill = "0 ( 0.0 )")
+```
