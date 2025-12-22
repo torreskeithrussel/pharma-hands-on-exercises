@@ -12,8 +12,8 @@ output: html_document
 In this document you'll see code chunks (typically on a light grey background) and text. This is an example of an "Rmarkdown" document. You can write and run code within the document and the results will be presented underneath each code chunk. You should follow the instructions as written in the text, amending the code chunks, then running them to produce the outputs as instructed.
 
 ## Data Source
-For these projects we are using anonymized CDISC datasets, which can be found here:
-https://github.com/phuse-org/phuse-scripts/tree/master/data/adam/cdisc 
+
+For these projects we are using anonymized CDISC datasets, which can be found here: <https://github.com/phuse-org/phuse-scripts/tree/master/data/adam/cdisc>
 
 ## R objects and functions
 
@@ -56,18 +56,18 @@ library(tidyverse)
 library(rio)
 ```
 
-2.   Read in the CDISC adsl data from the GitHub location (`https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adsl.xpt`) and assign this to an object in R using the assignment operator `<-`. Make sure that the URL location is a character string by enclosing it in `" "`. The `rio` package has a function called `import` that reads data into R and infers the data type from the file name. The first argument of that function is `file`. Paste the file path / URL above after the `file=` argument in the code below, then run the chunk using the green arrow.
+2.  Read in the CDISC adsl data from the GitHub location (`https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adsl.xpt`) and assign this to an object in R using the assignment operator `<-`. Make sure that the URL location is a character string by enclosing it in `" "`. The `rio` package has a function called `import` that reads data into R and infers the data type from the file name. The first argument of that function is `file`. Paste the file path / URL above after the `file=` argument in the code below, then run the chunk using the green arrow.
 
 ```{r read_adsl}
-adsl <- import( file = ""  )
-adsl
+adsl <- import( file = "https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adsl.xpt"  )
+# adsl
 ```
 
 Next filter the adsl dataset where the EFFFL variable has the value "Y" (as we did in previous MiniProjects). Add the appropriate code to the `filter` function to select only observations where the EFFFL is "Y". We will also recode the SEX variable to replace values where it is "M" with the value "Male" and where "F" recoding to "Female".
 
 ```{r create_adsl_eff}
 adsl_eff <- adsl %>%
-  filter(  ) %>%
+  filter( EFFFL == "Y" ) %>%
   mutate(SEX = recode(SEX, "M" = "Male", "F" = "Female")) 
 ```
 
@@ -79,13 +79,13 @@ In the R chunk below, we start with the `adsl_eff` dataset and calculate the mea
 
 The {dplyr} package has a function called `summarize()` that will calculate various summary statistics. It is analogous to `PROC MEANS` in SAS. In the chunk below, we will create a new variable named "mean" that will hold the mean AGE at each level of the `group_by` variables. Add the specified by variables from above to the `group_by()` function in the code below, run the chunk, and observe the output from the `summarize()` function.
 
-+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|  |
+|------------------------------------------------------------------------|
 | **QUESTION**: If there are three treatment groups and two levels of SEX, how many rows will be in the resulting dataset if we `group_by()` using the variables `TRT01AN, TRT01A, SEX`? |
-+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 ```{r}
 adsl_eff %>%
-  group_by(  ) %>% 
+  group_by( TRT01AN, TRT01A, SEX ) %>% 
   summarize(mean =(mean(AGE)))
 ```
 
@@ -93,10 +93,10 @@ Notice that there are 5 decimal places outputted in the mean values. We do not o
 
 ```{r}
 adsl_eff %>%
-  group_by( TRT01A, TRT01AN, SEX ) %>%
-  summarize(mean = (mean( AGE ) %>% 
-                      round(digits =  ) %>%
-                      format(nsmall =  ))
+  group_by(TRT01A, TRT01AN, SEX) %>%
+  summarize(mean = (mean(AGE) %>% 
+                      round(digits = 1 ) %>%
+                      format(nsmall = 1 ))
   )
 ```
 
@@ -107,11 +107,11 @@ Using the above information, finish the code below by creating a data frame name
 ```{r}
 age_stat<- adsl_eff %>%
   group_by(TRT01AN,TRT01A,SEX) %>%
-  summarize(mean = (mean( ) %>% round(digits = 1) %>% format(nsmall=1))  ,
-            sd = (sd( ) %>% round(digits = 1) %>% format(nsmall = 1)), 
-            med = median( )  ,              
-            min = min( ), 
-            max = max( ),
+  summarize(mean = (mean(AGE) %>% round(digits = 1) %>% format(nsmall=1))  ,
+            sd = (sd(AGE) %>% round(digits = 1) %>% format(nsmall = 1)), 
+            med = median(AGE) %>% round(digits = 0) %>% format(nsmall = 0),
+            min = min(AGE) %>% round(digits = 0) %>% format(nsmall = 0), 
+            max = max(AGE) %>% round(digits = 0) %>% format(nsmall = 0),
             n = n())
 
 age_stat
@@ -210,7 +210,7 @@ If you need to copy and paste code 3 times or more it's time to write a function
 
 You can quickly convert from code like this:
 
-```{r}
+```{r eval=FALSE}
 age_stat<- adsl_eff %>%
   group_by(TRT01AN,TRT01A,SEX) %>%
   summarize(mean = mean( ) %>% round(digits = 1) %>% format(nsmall=1)  ,
@@ -272,6 +272,7 @@ varSummary <- function(.data = NULL, variable = NULL) {
               n = n())
 }
 
-adsl_saf %>%
+# adsl_saf %>%
+adsl_eff %>%
   varSummary(AGE)
 ```
