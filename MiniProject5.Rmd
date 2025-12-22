@@ -6,8 +6,8 @@ output: html_document
 ---
 
 ## Data Source
-For these projects we are using anonymized CDISC datasets, which can be found here:
-https://github.com/phuse-org/phuse-scripts/tree/master/data/adam/cdisc 
+
+For these projects we are using anonymized CDISC datasets, which can be found here: <https://github.com/phuse-org/phuse-scripts/tree/master/data/adam/cdisc>
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -95,7 +95,7 @@ In Step 4 above, we defined a `group` mapping to show data for each level of `TR
 
 ```{r}
 plot1 <- PR %>%
-  ggplot(data = PR, mapping = aes(x=ADY, y=AVAL, group =  )) +
+  ggplot(data = PR, mapping = aes(x=ADY, y=AVAL, group = USUBJID)) +
   geom_line()
 
 plot1
@@ -109,10 +109,10 @@ Change the text in the `labs()` statement below to make sensible titles and axes
 
 ```{r}
 plot2 <- plot1 + 
-  labs(title = "Plot Title",
-       subtitle = "Plot subtitle",
-       x = "X-axis label",
-       y = "Y-axis label",
+  labs(title = "Subject-Level Pulse Rate Trajectories Across Study Days",
+       subtitle = "Safety Monitoring in the Xanomeline Clinical Trial",
+       x = "Study Day",
+       y = "Pulse Rate (Beats/Min)",
        caption = paste("Plot created on:",Sys.Date()))
 plot2
 ```
@@ -176,8 +176,7 @@ ggplot(data = PR, mapping = aes(x=StudyWeek, y=AVAL)) +
   geom_point()
 ```
 
-We can see that subjects have measurements on weeks between 0-30, and then a few individuals having measurements at week 40. 
-Let's filter down to the weeks 0, 5, 10, 15, 20, 25, 30  before applying the `stat_summary` function:
+We can see that subjects have measurements on weeks between 0-30, and then a few individuals having measurements at week 40. Let's filter down to the weeks 0, 5, 10, 15, 20, 25, 30 before applying the `stat_summary` function:
 
 ```{r}
 dataWeeks <- PR %>%
@@ -297,10 +296,85 @@ SysBP_plot +
 Do the same for Diastolic BP and Temperature. Ensure that the axes labels match the type of data used.\
 Update `plot4` for the new endpoint.
 
+```{r}
+paramn_plot <- function(PARAMN=NULL) {
+
+paramn_advs <- ADVS  %>%
+  filter(PARAMN == {{PARAMN}}) %>%
+  filter(VISITNUM > 3) 
+
+paramn_plot4 <- plot4 %+%
+  paramn_advs
+
+xLab <- quo_name(paramn_plot4$mapping$x)
+yLab <- quo_name(paramn_plot4$mapping$y)
+groupLab <- quo_name(paramn_plot4$mapping$group)
+
+study <- uniqueVal(paramn_plot4$data$STUDYID)
+measure <- uniqueVal(paramn_plot4$data$PARAM)
+
+
+xLab <- ifelse(xLab == "ADY", "Analysis Relative Day", xLab)
+groupLab <- case_when(groupLab == "USUBJID" ~ "Subject", 
+                      groupLab == "TRTA" ~ "Treatment",
+                      TRUE ~ groupLab)
+
+paramn_plot4 + 
+  labs(title = glue::glue("Study {study}"),
+       subtitle = glue::glue("Plot of {measure} by {groupLab}"),
+       x = xLab,
+       y = glue::glue("{measure}"))
+}
+
+DiaBP_plot <- paramn_plot(2)
+DiaBP_plot
+
+Temp_plot <- paramn_plot(6)
+Temp_plot
+```
+
 ## Extra challenge
 
 Read in vital signs data from another study which uses the `VS` or `ADVS` dataset standards. What code needs to change when you produce Pulse Rate plot for the new dataset (compared to the Pulse Rate plot which uses data values to determine labels)?
 
 ```{r}
+advsmax <- import("https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/advsmax.xpt")
+# advsmax
+```
+
+```{r}
+var <- advsmax %>%
+        filter(PARAMCD=="PULSE") %>%
+        filter(ATPTN==816)
+        
+    plot4 <- ggplot(data = var, mapping = aes(x=ADY, y=AVAL, group=USUBJID)) +
+              geom_line() +
+                    theme_bw() +
+                  facet_grid(rows="TRTA")
+    
+    varplot <- plot4 %+% var
+    
+    xLab <- quo_name(varplot$mapping$x)
+    yLab <- quo_name(varplot$mapping$y)
+    groupLab <- quo_name(varplot$mapping$group)
+    
+    study <- uniqueVal(varplot$data$STUDYID)
+    measure <- uniqueVal(varplot$data$PARAM)
+    
+    #hardcoding
+    xLab <- ifelse(xLab == "ADY", "Analysis Relative Day", xLab) 
+    groupLab <- case_when(groupLab == "SUBJID" ~ "Subject", 
+                          groupLab == "TRTA" ~ "Treatment",
+                          TRUE ~ groupLab)
+    
+    varplot + 
+      labs(title = glue::glue("Study {study}"),
+              subtitle = glue::glue("Plot of {measure} by {groupLab}"),
+              x = xLab,
+              y = yLab)
+
+```
+
+```{r eval=FALSE}
 sessioninfo::session_info()
 ```
