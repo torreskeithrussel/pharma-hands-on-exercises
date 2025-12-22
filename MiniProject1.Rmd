@@ -8,8 +8,11 @@ output: html_document
 ## Aims:
 
 -   Read in ADSL xpt dataset
+
 -   Subset for Efficacy Population
+
 -   Sort data
+
 -   View Demographic Listing
 
 ## How to use this document:
