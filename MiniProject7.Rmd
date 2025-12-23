@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(haven)
+library(rio)
 ```
 
 ## 1. Introduction
@@ -73,7 +74,9 @@ Function names are hard. You need to pick a name that isn't going to clash with 
 
 You can check whether the named function already exists. Copy and paste the following code to the Console.
 
-    ??mean
+```         
+??mean
+```
 
 #### Function arguments
 
@@ -151,7 +154,7 @@ Use the RStudio IDE `fun` snippet to create a function called "adsl_counts" base
 ```{r}
 
 adsl_counts <- function(dataFile){
- adsl_saf <- read_xpt(  ) %>%
+ adsl_saf <- read_xpt( {{dataFile}} ) %>%
     filter(SAFFL == "Y")
   
   Big_N_cnt <-  adsl_saf %>%
@@ -224,7 +227,7 @@ My recommendation is to write the function, check that it works, THEN go back th
 
 ```{r}
 adsl_counts <- function(dataFile){
-    adsl_saf <- read_xpt(  ) %>%
+    adsl_saf <- read_xpt( {{dataFile}} ) %>%
     filter(SAFFL == "Y")
   
   Big_N_cnt <- adsl_saf %>%
@@ -254,6 +257,7 @@ adsl_counts <- function(dataFile){
   
   adsl_mrg_cnt
 }
+
 ```
 
 ## 6. Review and refactor. Often.
@@ -267,16 +271,13 @@ As we said earlier, if we're writing functions for use in `{tidyverse}` data pip
 Amend the function code below to instead calculate based on an input dataset, like the `adsl_saf` data. You'll need to update code for `Big_N_cnt` and `small_n_cnt` to point to the input to the function (the input dataset). Check that the code works by running the chunk.
 
 ```{r}
-adsl_counts <- function(adsl_FilePath) {
-  adsl_saf <- read_xpt(   ) %>%
-    filter(SAFFL == "Y")
-  
-  Big_N_cnt <-  adsl_saf   %>%
+adsl_counts <- function(adsl_File) {
+   Big_N_cnt <-  adsl_File   %>%
     group_by( TRT01AN, TRT01A  ) %>%
     count(name = "N")
   Big_N_cnt
   
-  small_n_cnt <-  adsl_saf  %>%
+  small_n_cnt <-  adsl_File  %>%
     group_by( TRT01AN, TRT01A,  SEX ) %>%
     count(name = "n")
   small_n_cnt
@@ -305,6 +306,7 @@ table1 <- read_xpt(inFile) %>%
     filter(SAFFL == "Y") %>%
   adsl_counts()
 table1
+
 ```
 
 ## 7. Troubleshooting and debugging functions
@@ -338,3 +340,37 @@ In the code above we are allowing the user to pass the `digits` argument through
 ## Challenge
 
 Convert the code you wrote in the Mini Project 6 challenge into a function that takes an input `adlb` dataset and produces the graph. For an additional challenge, allow the user to specify the axes labels.
+
+```{r}
+adlb_plot <- function(adlb_FilePath, xlbl, ylbl) {
+  
+  ALT <- import(adlb_FilePath) %>% 
+    filter(PARAMCD == "ALT")
+  
+  ALT2 <- ALT %>%
+    filter(VISITNUM > 3) %>%
+    mutate(WEEK = floor(ADY/7))
+  
+  ALT3 <- ALT2 %>%
+    filter(WEEK %in% c(2, 4, 6, 8, 16, 24, 26)) %>%
+    filter(LBNRIND %in% c("HIGH", "LOW"))
+
+  library(ggdist)
+  plot4 <- 
+    ALT3 %>%
+    filter(WEEK %in% c(2, 4, 6, 8, 16, 24, 26)) %>%
+    ggplot(mapping = aes(x = LBSTRESN, y = as.factor(WEEK))) +
+    coord_cartesian(xlim=c(0, 150)) +
+    stat_dotsinterval(slab_shape = 19, slab_alpha = 0) +
+    geom_point(data = ALT3, color = "red") + 
+    labs(x = xlbl,
+         y = ylbl)
+  
+library(cowplot)
+    ggdraw(plot4) + 
+    draw_label("DRAFT", color = "grey", alpha=0.3, size = 75, angle = 45)
+}
+
+adlb_plot("https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adlbc.xpt", "Alanine Aminotransferase U/L", "Week")
+
+```
