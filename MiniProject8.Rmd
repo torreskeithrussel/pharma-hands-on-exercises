@@ -66,7 +66,9 @@ If we want to do that for every column in `adsl_saf` then we need to work out a 
 
 4.  Within the `{ }` of the loop we put code that we want to run with each iteration. We assign element `i` of the counts vector. We point to the i_th element of the `varNames` vector and use this to pick out th column in `adsl_saf` that we want to work with using the `[[` operator to extract that column. We then use the `!is.na` logical comparison to check whether the values in the column are missing. This will give a `TRUE` or `FALSE` result for each value. Using the `sum` function effectively treats these as 0 for `FALSE` and 1 for `TRUE` so the sum counts the number of non-missing values. Note that `!is.na` and `sum` operate over the vector as a whole, in one operation, as we saw earlier.
 
-        counts[i] <- sum( !is.na( adsl_saf[[varNames[i]]] ) )
+    ```         
+    counts[i] <- sum( !is.na( adsl_saf[[varNames[i]]] ) )
+    ```
 
 5.  At the end of the loop, the `i` values in `counts` should be filled with the number of non-missing values in each column. Note that (like in a function) if you do not return items OUT of the loop, then they will not be stored for later use.
 
@@ -90,14 +92,14 @@ While this works, the code is a bit clunky. I see code like this (or variations 
 
 Note that this results in ***a vector of named elements***, rather than a dataset, so it's not so easy to extract the element you might want. Trying the `{tidyverse}` `select` statement results in an error.
 
-```{r}
+```{r error=TRUE}
 counts %>%
   select(STUDYID)
 ```
 
 It's not immediately clear from the error above exactly what the problem is. Subsetting by variable name, assuming that `counts` is a data frame (and so has two dimensions):
 
-```{r}
+```{r error=TRUE}
 counts[,"STUDYID"]
 ```
 
@@ -221,7 +223,7 @@ adsl_saf %>%
 
 An alternative might be `all_of` but then if a column is missing from the set, the operation will stop.
 
-```{r}
+```{r error=TRUE}
 adsl_saf %>%
   summarise(across(.cols = all_of(c("AGE","SEX", "RACE","ETHNIC","MIKE")),
                    .fns = nonMissing)
@@ -329,3 +331,37 @@ Using each of these packages is a little out of scope for this Mini-Project, but
 
 Apply the `adsl_counts` function that you developed in Mini-Project 7 to the `adsl_saf` data here, to show the counts of `SEX` by `TRT01A` for each value of `RACE`.
 
+```{r}
+adsl_counts <- function(adsl_File) {
+   Big_N_cnt <-  adsl_File   %>%
+    group_by( TRT01AN, TRT01A  ) %>%
+    count(name = "N")
+  Big_N_cnt
+  
+  small_n_cnt <-  adsl_File  %>%
+    group_by( TRT01AN, TRT01A,  SEX ) %>%
+    count(name = "n")
+  small_n_cnt
+  
+  adsl_mrg_cnt <- small_n_cnt %>%
+    left_join(Big_N_cnt, by = c("TRT01A", "TRT01AN")) %>%
+    mutate(perc = round((n/N)*100, digits=1)) %>%
+    mutate(perc_char = format(perc, nsmall=1)) %>%
+    mutate(npct = paste(n, 
+                        paste0( "(", perc_char, ")" ) 
+                        ) 
+           ) %>%
+    mutate(SEX = recode(SEX, 
+                        "M" = "Male",
+                        "F" = "Female")) %>%
+    ungroup() %>%
+    select(TRT01A, SEX, npct) %>%
+    pivot_wider(names_from = TRT01A, values_from = npct)
+  
+  adsl_mrg_cnt
+}
+
+adsl_saf %>%
+  split(f = .$RACE) %>%
+  purrr::map(.f = adsl_counts)
+```
