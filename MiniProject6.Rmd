@@ -5,8 +5,7 @@ date: "2/21/2023"
 output: html_document
 ---
 
-This exercise will introduce five {ggplot2} extension packages:
-`{gghighlight}`, `{ggdist}`, `{ggridges}`, `{patchwork}`, `{cowplot}`
+This exercise will introduce five {ggplot2} extension packages: `{gghighlight}`, `{ggdist}`, `{ggridges}`, `{patchwork}`, `{cowplot}`
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -80,7 +79,6 @@ What would be useful is if we could highlight those subjects whose lab results d
 
 The predicate used in `gghighlight` here checks whether each subject has *any* values for which the LBNRIND variable is missing i.e. it is checking whether each subject has any values which are marked either "HIGH" or "LOW".
 
-
 ```{r}
 library(gghighlight)
 
@@ -119,17 +117,17 @@ Now let's add data on top of the boxplots. We can do this quite easily using `ge
 ALT2 %>%
   filter(WEEK %in% c(0, 5, 10, 15, 20, 25, 30)) %>%
   ggplot( ) +
-  geom_boxplot( ) +
-  geom_point( )
+  geom_boxplot(mapping = aes(x = as.factor(WEEK), y = LBSTRESN)) +
+  geom_point(mapping = aes(x = as.factor(WEEK), y = LBSTRESN))
 ```
 
 It might be more useful to spread out the points a little so that we can see individual points. We do this using `geom_jitter`. We can also apply the `alpha` setting to the points to add transparency so we can see the boxplots beneath. The `width` option in `geom_jitter` controls the horizontal jittering of the points. Smaller values will cluster them closer to the middle of the boxplot. The default is to use the full width of the boxplot. Note that in `geom_boxplot` we set the argument `outlier.shape = NA` which will "turn off" showing the outliers, since in this case we show them via `geom_jitter` we don't need to show them in the boxplot ***as well***.
 
 ```{r}
 plot2b <- ALT2 %>%
-  filter( ) %>%
-  ggplot(mapping = aes(x = , y = )) +
-  geom_boxplot(  ) +
+  filter(WEEK %in% c(0, 5, 10, 15, 20, 25, 30)) %>%
+  ggplot(mapping = aes(x = as.factor(WEEK), y = LBSTRESN)) +
+  geom_boxplot(outlier.shape = NA) +
   geom_jitter(alpha = 0.2, width = 0.1)
 
 plot2b
@@ -147,7 +145,7 @@ library(ggdist)
 ALT2 %>%
   filter(WEEK %in% c(0, 5, 10, 15, 20, 25, 30)) %>%
   ggplot(mapping = aes(x = LBSTRESN, y = as.factor(WEEK))) +
-  coord_cartesian(xlim=c(0, 100)) +
+  coord_cartesian(xlim=c(0, 125)) +
   stat_dotsinterval(slab_shape = 19, quantiles = 100)
 ```
 
@@ -182,7 +180,7 @@ Use the "Data visualization with ggplot2" Cheat Sheet (from the Help menu in RSt
 ```{r}
 ALT2 %>%
   ggplot() +
-  geom_bar(mapping = aes( ))
+  geom_bar(mapping = aes(x = WEEK, fill = LBNRIND))
 ```
 
 Most individuals have Lab measurements on weeks 2, 4, 6, 8, 16, 24, 26. Let's filter the data to show JUST those weeks.
@@ -225,15 +223,16 @@ As we did in the last mini project, we can now take plots `plot1b` and `plot2b` 
 
 ```{r}
 plot1e <- plot1b +
-  labs(x =  ,
-       y =   )
+  labs(x = "Study Day" ,
+       y = "Laboratory Results in Standard Units")
 
 plot2c <- plot2b +
-  labs(x =  , y =   )
+  labs(x = "Study Week" ,
+       y = "Laboratory Results in Standard Units")
 
 plot3c <- plot3b +
-  labs(x =  ,
-       y =  )
+  labs(x = "Study Week",
+       y = "Number of Subjects")
 ```
 
 ## 7. Using `{patchwork}`
@@ -288,6 +287,26 @@ Using what you've learned in this Mini Project 6, please try to create a graph s
 
 ```{r, echo=FALSE}
 knitr::include_graphics(path = "img/MiniProject6_challenge.png")
+```
+
+```{r}
+ALT3 <- ALT2 %>%
+  filter(WEEK %in% c(2, 4, 6, 8, 16, 24, 26)) %>%
+  filter(LBNRIND %in% c("HIGH", "LOW"))
+
+plot4 <- 
+  ALT3 %>%
+  filter(WEEK %in% c(2, 4, 6, 8, 16, 24, 26)) %>%
+  ggplot(mapping = aes(x = LBSTRESN, y = as.factor(WEEK))) +
+  coord_cartesian(xlim=c(0, 150)) +
+  stat_dotsinterval(slab_shape = 19, slab_alpha = 0) +
+  geom_point(data = ALT3, color = "red") + 
+  labs(x = "Alanine Aminotransferase U/L",
+       y = "Week")
+
+ggdraw(plot4) + 
+  draw_label("DRAFT", color = "grey", alpha=0.3, size = 75, angle = 45) 
+
 ```
 
 ```{r}
