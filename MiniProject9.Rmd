@@ -305,8 +305,8 @@ Created on 2023-03-08 with reprex v2.0.2
 
 ## Last minute dos and don'ts.
 
--   DON'T start a chuck with rm(list = ls()). You'll wipe out the current environment of the person who is trying to help you. Which they probably won't appreciate. (The workspace is like a SAS working directory and this command would be like executing a SAS kill ).\
--   DON'T start with a setwd("C:/Users/<yourUsername>/Documents/") because it won't work on someone else's computer.
+-   DON'T start a chuck with **`rm(list = ls())`**. You'll wipe out the current environment of the person who is trying to help you. Which they probably won't appreciate. (The workspace is like a SAS working directory and this command would be like executing a SAS kill ).\
+-   DON'T start with a **setwd("C:/Users/**<yourUsername>**/Documents/")** because it won't work on someone else's computer.
 -   Call ONLY the packages you need to illustrate the problem.
 -   ONLY include code that illustrates your problem.
 -   Include the ***smallest*** dataset that illustrates the problem.
@@ -351,3 +351,27 @@ ggplot(data = BICARB,
        mapping = aes(x = ADY, y = AVAL)) +
   geom_point(aes(colour = "THERAPY1"))
 ```
+
+**Solution:** Content of the markdown file produced after running `reprex()` in the console:
+
+````         
+``` r
+library(tidyverse)
+library(rio)
+
+adlb <- import("https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adlbh.xpt")
+
+BICARB <- adlb %>%  
+    filter(SAFFL == "Y") %>% 
+    filter(PARAMCD == "BASO")
+
+
+ggplot(data = BICARB,
+       mapping = aes(x = ADY, y = AVAL)) +
+  geom_point(aes(colour = "THERAPY1"))
+```
+
+![](https://i.imgur.com/hOPoJqW.png)<!-- -->
+
+<sup>Created on 2025-12-24 with [reprex v2.1.1](https://reprex.tidyverse.org)</sup>
+````
