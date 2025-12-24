@@ -18,7 +18,7 @@ adsl_saf <- import("https://github.com/phuse-org/phuse-scripts/raw/master/data/a
 
 ## Overview
 
-In this Mini-Project, we'll look at how to use tidy evaluation (aka tidyeval) to program functions that use tidyverse packages such as `dplyr` in more advanced ways. The training here serves a continuation to the materials on functions covered in Mini-Projects 7 and 8. 
+In this Mini-Project, we'll look at how to use tidy evaluation (aka tidyeval) to program functions that use tidyverse packages such as `dplyr` in more advanced ways. The training here serves a continuation to the materials on functions covered in Mini-Projects 7 and 8.
 
 ## What is tidyeval?
 
@@ -26,9 +26,9 @@ Tidyeval is what allows us to pass column names into tidyverse functions like dp
 
 `mtcars %>% select(mpg, cyl)`
 
-You can think of tidyeval as a toolkit for metaprogramming in R. It is what powers the tidyverse. We'll look at how we can write R functions using tidyeval concepts in this training. 
+You can think of tidyeval as a toolkit for metaprogramming in R. It is what powers the tidyverse. We'll look at how we can write R functions using tidyeval concepts in this training.
 
-You can think of tidyeval as something similar to [SAS macros](https://stats.oarc.ucla.edu/sas/seminars/sas-macros-introduction/) but for R. Note that some of the concepts may be completely different from what you've used in SAS, since R does not have PROCs or DATA steps. We've added short chunks of text where there are similarities. 
+You can think of tidyeval as something similar to [SAS macros](https://stats.oarc.ucla.edu/sas/seminars/sas-macros-introduction/) but for R. Note that some of the concepts may be completely different from what you've used in SAS, since R does not have PROCs or DATA steps. We've added short chunks of text where there are similarities.
 
 ## Evaluated and Quoted arguments
 
@@ -117,7 +117,7 @@ data.frame(factor = 0, value = 1) %>% my_rescale2(value)
 
 `...` in a function can take any number of arguments. Passing ... is equivalent to the combination of `enquos()` and `!!!`. Those component functions are outside of the scope of this training.
 
-For example, we could use the dynamic dots operator to filter by an unlimited number of conditions for a custom function. Let's do that on the mpg dataset  to get Jeeps manufactured in 2008 (use `?mpg` for info on the dataset).
+For example, we could use the dynamic dots operator to filter by an unlimited number of conditions for a custom function. Let's do that on the mpg dataset to get Jeeps manufactured in 2008 (use `?mpg` for info on the dataset).
 
 ```{r}
 # load mpg data set
@@ -129,6 +129,7 @@ mpg_filter <- function(...) {
 }
 # update the arguments here to get Jeeps from 2008
 mpg_filter(manufacturer == "volkswagen", year == 1900)
+mpg_filter(manufacturer == "jeep", year == 2008)
 ```
 
 In the example above, we were able to collect multiple arguments in through `filter()`.
@@ -136,7 +137,7 @@ In the example above, we were able to collect multiple arguments in through `fil
 Fix the function using dynamic dots so that it works as expected (hint: we looked at this in Mini-Project 7). Make sure you understand what's going on before moving on.
 
 ```{r}
-mySummary <- function(myData){
+mySummary <- function(myData, ...){
   myData %>%
     group_by( TRT01AN, TRT01A ) %>%
     summarise(mean = round(mean(AGE) ))
@@ -147,10 +148,9 @@ mySummary(adsl_saf)
 mySummary(adsl_saf, digits = 1)
 ```
 
-
 ## Embrace operator
 
-When you create a function around a tidyverse pipeline, wrap the function arguments containing data frame variables with `{{` and `}}`. `{{` is the combination of `enquo()` and `!!`. This will allow you to pass named arguments through the function. You may remember that we've used this operator in previous Mini-Projects. 
+When you create a function around a tidyverse pipeline, wrap the function arguments containing data frame variables with `{{` and `}}`. `{{` is the combination of `enquo()` and `!!`. This will allow you to pass named arguments through the function. You may remember that we've used this operator in previous Mini-Projects.
 
 To connect this to SAS, functions can be thought of as SAS macros. You can think of the embrace operator as a way to setup parameters/pass arguments for data frame variables into a function. This is similar to what we would do in a SAS macro where all the key words in SAS statements that are related to macro variables or macro programs are preceded by percent sign %; and when we reference a macro variable it is preceded by an ampersand sign &. Note that this is specifically for dataframe variables. As you remember from the previous trainings, you don't need in every case for a custom function.
 
@@ -171,12 +171,12 @@ Let's apply that operator again on the `mpg` dataset to get summary statistics b
 ```{r}
 grouped_mean <- function(df, group_var, summary_var) {
   df %>% 
-    group_by( group_var ) %>% 
-    summarize(mean = mean( summary_var ) %>% round(digits = 0) %>% format(nsmall = 0)  ,
-              sd = sd( summary_var ) %>% round(digits = 1) %>% format(nsmall = 1), 
-              med = median( summary_var ) %>% round(digits = 0) %>% format(nsmall = 0) ,
-              min = min( summary_var ) %>% format(nsmall = 0), 
-              max = max( summary_var ) %>% format(nsmall = 0),
+    group_by( {{group_var}} ) %>% 
+    summarize(mean = mean( {{summary_var}} ) %>% round(digits = 0) %>% format(nsmall = 0)  ,
+              sd = sd( {{summary_var}} ) %>% round(digits = 1) %>% format(nsmall = 1), 
+              med = median( {{summary_var}} ) %>% round(digits = 0) %>% format(nsmall = 0) ,
+              min = min( {{summary_var}} ) %>% format(nsmall = 0), 
+              max = max( {{summary_var}} ) %>% format(nsmall = 0),
               n = n()) 
 }
 
@@ -190,9 +190,9 @@ Connecting this to SAS macros,in the case above, what you did is similar to usin
 
 The walrus operator is useful for assigning things. It's easy to remember b/c it's shaped like a walrus:`:=`. Generally, if you're using the embrace operator or bang-bang on the left hand side of an assignment then you'll need the walrus operator (`:=`).
 
-`!!` is the bang-bang operator. `!!` says something like “evaluate me!” or “unquote!” We can tell `group_by()` not to quote by using `!!`. 
+`!!` is the bang-bang operator. `!!` says something like “evaluate me!” or “unquote!” We can tell `group_by()` not to quote by using `!!`.
 
-`enquo()` here is also used to return a quosure. What is a quosure, you might ask? A quosure is a special type of  defused expression (skim this doc link for if you want to understand what that means: https://rlang.r-lib.org/reference/topic-defuse.html). It keeps track of the original context the expression was written in. Visit the rlang help docs for `enquo()` or `!!` if you want to learn more (you can use ?rlang::`!!` or ?rlang::enquo()).
+`enquo()` here is also used to return a quosure. What is a quosure, you might ask? A quosure is a special type of defused expression (skim this doc link for if you want to understand what that means: <https://rlang.r-lib.org/reference/topic-defuse.html>). It keeps track of the original context the expression was written in. Visit the rlang help docs for `enquo()` or `!!` if you want to learn more (you can use ?rlang::`!!` or ?rlang::enquo()).
 
 Here's an example that uses those concepts together. It creates a function that calculates the mean of a variable of interest and assigns it to a new variable name of interest. You'll see this is useful where we want to pass an argument that assigns a new variable name into a dataframe. This would be difficult to do otherwise.
 
@@ -262,7 +262,7 @@ Fix the following example from Mini-Project 4 to work by using the pair of funct
 ```{r}
 get_cat_demo <- function(.data = adsl_saf, variable = RACE) {
   # HINT: what character variable needs to be defined in this function?
-  var_char <- # complete this line here to solve this problem
+  var_char <- rlang::as_name(substitute(variable))    # complete this line here to solve this problem
   
   Big_N_cnt <- adsl_saf %>%
     group_by(TRT01AN, TRT01A) %>%
@@ -330,10 +330,10 @@ get_cat_demo(variable = RACE)
 
 Tidyeval can get pretty complicated. We've tried to explore a few common scenarios you might encounter in this training. If you want to learn more, consider reviewing the following links:
 
-- https://dcl-prog.stanford.edu/tidy-eval-detailed.html
-- https://lukas-r.blog/posts/2022-04-20-not-so-standard-evaluations
-- https://rlang.r-lib.org/reference/topic-quosure.html
-- Advanced R book - Chapters 17-20: https://adv-r.hadley.nz/
+-   <https://dcl-prog.stanford.edu/tidy-eval-detailed.html>
+-   <https://lukas-r.blog/posts/2022-04-20-not-so-standard-evaluations>
+-   <https://rlang.r-lib.org/reference/topic-quosure.html>
+-   Advanced R book - Chapters 17-20: <https://adv-r.hadley.nz/>
 
 ## Challenge
 
@@ -353,11 +353,11 @@ plot_ALT <- function(ALT, x_var, y_var, ...) {
     filter(WEEK %in% c(2, 4, 6, 8, 16, 24, 26))
   
   ALT2 %>%
-    ggplot(mapping = aes(x = x_var, y = as.factor( y_var ))) +
+    ggplot(mapping = aes(x = {{x_var}}, y = as.factor( {{y_var}} ))) +
     coord_cartesian(xlim=c(0, 150)) +
     ggdist::stat_dotsinterval(show_slab=FALSE) +
     geom_point(data = ALT2 %>% filter(LBNRIND %in% c("HIGH", "LOW")), 
-               mapping = aes(x = x_var, y = as.factor( y_var )), 
+               mapping = aes(x = {{x_var}}, y = as.factor( {{y_var}} )), 
                colour="red") +
     labs(   ) +
     cowplot::draw_label("DRAFT", color = "grey", 
@@ -370,4 +370,44 @@ import(inFile) %>%
   filter(PARAMCD == "ALT") %>%
   plot_ALT(x_var = LBSTRESN, y_var = WEEK,
            x = "Alanine Aminotransferase (U/L)", y = "Week")
+```
+
+**Solution:**
+
+```{r}
+
+FilePath <- "https://github.com/phuse-org/phuse-scripts/raw/master/data/adam/cdisc/adlbc.xpt"
+adlb <- import(FilePath)
+
+adlb_plot <- function(data, x_var, y_var, ...) {
+  
+  ALT <- data %>% 
+    filter(PARAMCD == "ALT")
+  
+  ALT2 <- ALT %>%
+    filter(VISITNUM > 3) %>%
+    mutate(WEEK = floor(ADY/7))
+  
+  ALT3 <- ALT2 %>%
+    filter(WEEK %in% ...) %>%
+    filter(LBNRIND %in% c("HIGH", "LOW"))
+
+  library(ggdist)
+  plot4 <- 
+    ALT3 %>%
+    filter(WEEK %in% ...) %>%
+    ggplot(mapping = aes(x = {{x_var}}, y = as.factor({{y_var}}))) +
+    coord_cartesian(xlim=c(0, 150)) +
+    stat_dotsinterval(slab_shape = 19, slab_alpha = 0) +
+    geom_point(data = ALT3, color = "red") + 
+    labs(x = "Alanine Aminotransferase U/L",
+         y = "Week")
+  
+library(cowplot)
+    ggdraw(plot4) + 
+    draw_label("DRAFT", color = "grey", alpha=0.3, size = 75, angle = 45)
+}
+
+adlb_plot(adlb, LBSTRESN, WEEK, c(2, 4, 6, 8, 16, 24, 26))
+
 ```
